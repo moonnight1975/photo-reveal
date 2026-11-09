@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { initDb, createGame, createPhoto, updateGameSettings, getAllGames } from './db.js';
+import { createGame, createPhoto, updateGameSettings, getAllGames } from './db.js';
 
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -194,7 +194,7 @@ const lionSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" w
 </svg>`;
 
 export function seedDemoData() {
-  initDb();
+  // DB is already initialized by the caller
   const existing = getAllGames();
   if (existing.length > 0) {
     console.log(`ℹ️ Database already has ${existing.length} games. Skipping seed.`);
@@ -263,5 +263,7 @@ export function seedDemoData() {
 
 // Auto seed on direct run
 if (process.argv[1]?.endsWith('seed.js')) {
+  const { initDb } = await import('./db.js');
+  await initDb();
   seedDemoData();
 }

@@ -42,10 +42,6 @@ const io = new Server(httpServer, {
 
 const gameManager = new GameManager();
 
-// Initialize DB and Demo Seed
-initDb();
-seedDemoData();
-
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors({ origin: '*' }));
@@ -530,6 +526,14 @@ io.on('connection', (socket) => {
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3002;
-httpServer.listen(PORT, () => {
-  console.log(`🎮 Photo Reveal Game Server running on port ${PORT}`);
+
+// Initialize DB (async) then start server
+initDb().then(() => {
+  seedDemoData();
+  httpServer.listen(PORT, () => {
+    console.log(`🎮 Photo Reveal Game Server running on port ${PORT}`);
+  });
+}).catch((err) => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1);
 });
