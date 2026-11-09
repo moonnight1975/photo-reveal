@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Camera, Gamepad2, Shield, Users, Zap, Trophy, Eye, Sparkles } from 'lucide-react';
+import PatternBackground from '../components/PatternBackground';
 
 const container = {
   hidden: { opacity: 0 },
@@ -17,13 +18,12 @@ const item = {
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-navy-950 selection:bg-purple-500 selection:text-white px-4">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-950/60 via-navy-950 to-indigo-950/60" />
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-purple-600/8 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-electric-500/6 rounded-full blur-3xl animate-pulse-slow" />
-      </div>
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black selection:bg-purple-500 selection:text-white px-4">
+      {/* Animated pattern background */}
+      <PatternBackground />
+
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
 
       {/* Floating decorative icons */}
       {[
