@@ -30,7 +30,10 @@ export default function GamePreview({ game }: GamePreviewProps) {
     );
   }
 
-  const photoUrl = currentPhoto.filePath?.startsWith('/') ? currentPhoto.filePath : `/${currentPhoto.filePath}`;
+  const rawPath = currentPhoto.filePath || '';
+  const photoUrl = rawPath.startsWith('http') || rawPath.startsWith('data:') || rawPath.startsWith('/')
+    ? rawPath
+    : `/${rawPath}`;
   const revealedCount = revealedTiles.length;
   const progressPercent = totalTiles > 0 ? (revealedCount / totalTiles) * 100 : 0;
 

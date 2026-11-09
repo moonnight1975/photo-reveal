@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getSocket } from '../lib/socket';
+import { supabaseGameService, generateTileOrder } from '../services/supabaseGameService';
+import { realtimeBridge } from '../lib/supabaseRealtime';
 import type { GameState, GameSettings, Photo, PlayerScore } from '../types';
 
 function getGameId(game: GameState): string {
@@ -38,36 +39,45 @@ export function useAdminGame(): UseAdminGameReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const currentGameIdRef = useRef<string | null>(null);
+  const gameRef = useRef<GameState | null>(null);
+
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
 
   // Fetch all games on mount
-  useEffect(() => {
-    const fetchGames = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch('/api/games');
-        if (!res.ok) throw new Error('Failed to fetch games');
-        const data = await res.json();
-        setGames(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch games');
-      } finally {
-        setLoading(false);
+  const refreshGames = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await supabaseGameService.getAllGames();
+      setGames(data);
+      if (currentGameIdRef.current) {
+        const found = data.find((g) => getGameId(g) === currentGameIdRef.current);
+        if (found) setGame(found);
       }
-    };
-    fetchGames();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch games from Supabase');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Socket event listeners
   useEffect(() => {
-    const socket = getSocket();
+    refreshGames();
+  }, [refreshGames]);
+
+  // Subscribe to real-time events for the active game
+  useEffect(() => {
+    const activeId = currentGameIdRef.current;
+    if (!activeId) return;
 
     const handleGameState = (state: GameState) => {
-      const stateId = getGameId(state);
-      if (stateId === currentGameIdRef.current) {
+      if (getGameId(state) === currentGameIdRef.current) {
         setGame(state);
       }
       setGames((prev) =>
-        prev.map((g) => (getGameId(g) === stateId ? { ...g, ...state } : g))
+        prev.map((g) => (getGameId(g) === getGameId(state) ? { ...g, ...state } : g))
       );
     };
 
@@ -125,69 +135,34 @@ export function useAdminGame(): UseAdminGameReturn {
       });
     };
 
-    const handlePhotoChanged = (_data: { photoIndex: number }) => {
-      // Will be picked up by the next game:state
-    };
-
-    socket.on('game:state', handleGameState);
-    socket.on('game:state-update', handleGameState);
-    socket.on('game:reveal-tile', handleRevealTile);
-    socket.on('game:timer-tick', handleTimerTick);
-    socket.on('game:scores-update', handleScoresUpdate);
-    socket.on('game:finished', handleFinished);
-    socket.on('game:show-answer', handleShowAnswer);
-    socket.on('game:photo-changed', handlePhotoChanged);
+    realtimeBridge.on(activeId, 'game:state', handleGameState);
+    realtimeBridge.on(activeId, 'game:state-update', handleGameState);
+    realtimeBridge.on(activeId, 'game:reveal-tile', handleRevealTile);
+    realtimeBridge.on(activeId, 'game:timer-tick', handleTimerTick);
+    realtimeBridge.on(activeId, 'game:scores-update', handleScoresUpdate);
+    realtimeBridge.on(activeId, 'game:finished', handleFinished);
+    realtimeBridge.on(activeId, 'game:show-answer', handleShowAnswer);
 
     return () => {
-      socket.off('game:state', handleGameState);
-      socket.off('game:state-update', handleGameState);
-      socket.off('game:reveal-tile', handleRevealTile);
-      socket.off('game:timer-tick', handleTimerTick);
-      socket.off('game:scores-update', handleScoresUpdate);
-      socket.off('game:finished', handleFinished);
-      socket.off('game:show-answer', handleShowAnswer);
-      socket.off('game:photo-changed', handlePhotoChanged);
+      realtimeBridge.off(activeId, 'game:state', handleGameState);
+      realtimeBridge.off(activeId, 'game:state-update', handleGameState);
+      realtimeBridge.off(activeId, 'game:reveal-tile', handleRevealTile);
+      realtimeBridge.off(activeId, 'game:timer-tick', handleTimerTick);
+      realtimeBridge.off(activeId, 'game:scores-update', handleScoresUpdate);
+      realtimeBridge.off(activeId, 'game:finished', handleFinished);
+      realtimeBridge.off(activeId, 'game:show-answer', handleShowAnswer);
     };
-  }, []);
-
-  const createGame = useCallback(async (name: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/games', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
-      if (!res.ok) throw new Error('Failed to create game');
-      const newGame = await res.json();
-      currentGameIdRef.current = newGame.id;
-
-      // Join the socket room so we get real-time updates
-      const socket = getSocket();
-      socket.emit('game:request-state', { gameId: newGame.id, isAdmin: true });
-
-      setGames((prev) => [newGame, ...prev]);
-      setGame(newGame);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create game');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  }, [game?.id]);
 
   const selectGame = useCallback(async (gameId: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/games/${gameId}`);
-      if (!res.ok) throw new Error('Failed to load game');
-      const gameData = await res.json();
+      const gameData = await supabaseGameService.getGame(gameId, true);
+      if (!gameData) throw new Error('Game not found');
       setGame(gameData);
       currentGameIdRef.current = gameId;
-      // Join the admin socket room
-      const socket = getSocket();
-      socket.emit('game:request-state', { gameId, isAdmin: true });
+      realtimeBridge.getChannel(gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load game');
     } finally {
@@ -195,65 +170,71 @@ export function useAdminGame(): UseAdminGameReturn {
     }
   }, []);
 
-  const uploadPhoto = useCallback(async (gameId: string, file: File, title: string, hints: string[], category: string) => {
+  const deselectGame = useCallback(() => {
+    if (currentGameIdRef.current) {
+      realtimeBridge.leaveChannel(currentGameIdRef.current);
+    }
+    setGame(null);
+    currentGameIdRef.current = null;
+  }, []);
+
+  const createGame = useCallback(async (name: string) => {
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', title);
-      formData.append('category', category || 'general');
-      if (hints.length > 0) {
-        formData.append('hints', hints.filter(h => h.trim()).join('||'));
-      }
-
-      const res = await fetch(`/api/games/${gameId}/photos`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.error || 'Failed to upload photo');
-      }
-
-      // Refresh game state
-      const gameRes = await fetch(`/api/games/${gameId}`);
-      if (gameRes.ok) {
-        const gameData = await gameRes.json();
-        setGame(gameData);
-        setGames((prev) => prev.map((g) => (getGameId(g) === gameId ? gameData : g)));
-      }
+      const newGame = await supabaseGameService.createGame(name);
+      currentGameIdRef.current = newGame.id;
+      setGames((prev) => [newGame, ...prev]);
+      setGame(newGame);
+      realtimeBridge.getChannel(newGame.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload photo');
-      throw err;
+      setError(err instanceof Error ? err.message : 'Failed to create game');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const updatePhoto = useCallback(async (gameId: string, photoId: string, data: Partial<Photo>) => {
-    setError(null);
-    try {
-      const res = await fetch(`/api/games/${gameId}/photos/${photoId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to update photo');
-
-      const gameRes = await fetch(`/api/games/${gameId}`);
-      if (gameRes.ok) {
-        const gameData = await gameRes.json();
-        setGame(gameData);
-        setGames((prev) => prev.map((g) => (getGameId(g) === gameId ? gameData : g)));
+  const uploadPhoto = useCallback(
+    async (gameId: string, file: File, title: string, hints: string[], category: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await supabaseGameService.uploadPhoto(gameId, file, title, hints, category);
+        const updated = await supabaseGameService.getGame(gameId, true);
+        if (updated) {
+          setGame(updated);
+          setGames((prev) => prev.map((g) => (getGameId(g) === gameId ? updated : g)));
+          await realtimeBridge.broadcast(gameId, 'game:state', updated);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to upload photo');
+        throw err;
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update photo');
-    }
-  }, []);
+    },
+    []
+  );
+
+  const updatePhoto = useCallback(
+    async (gameId: string, photoId: string, data: Partial<Photo>) => {
+      setError(null);
+      try {
+        await supabaseGameService.updatePhoto(photoId, data);
+        const updated = await supabaseGameService.getGame(gameId, true);
+        if (updated) {
+          setGame(updated);
+          setGames((prev) => prev.map((g) => (getGameId(g) === gameId ? updated : g)));
+          await realtimeBridge.broadcast(gameId, 'game:state', updated);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update photo');
+      }
+    },
+    []
+  );
 
   const deletePhoto = useCallback((gameId: string, photoId: string) => {
-    // Optimistic update
     setGame((prev) => {
       if (!prev) return prev;
       return {
@@ -262,88 +243,442 @@ export function useAdminGame(): UseAdminGameReturn {
       };
     });
 
-    // Delete via REST (which also reloads in-memory state)
-    fetch(`/api/games/${gameId}/photos/${photoId}`, { method: 'DELETE' })
-      .then((res) => {
-        if (!res.ok) throw new Error('Delete failed');
-        return fetch(`/api/games/${gameId}`);
-      })
-      .then((res) => res.ok ? res.json() : null)
-      .then((gameData) => {
-        if (gameData) {
-          setGame(gameData);
-          setGames((prev) => prev.map((g) => (getGameId(g) === gameId ? gameData : g)));
+    supabaseGameService
+      .deletePhoto(photoId)
+      .then(async () => {
+        const updated = await supabaseGameService.getGame(gameId, true);
+        if (updated) {
+          setGame(updated);
+          setGames((prev) => prev.map((g) => (getGameId(g) === gameId ? updated : g)));
+          await realtimeBridge.broadcast(gameId, 'game:state', updated);
         }
       })
-      .catch(() => {
-        // Refresh anyway
-        fetch(`/api/games/${gameId}`)
-          .then((r) => r.ok ? r.json() : null)
-          .then((d) => { if (d) setGame(d); });
+      .catch((err) => {
+        console.error(err);
       });
   }, []);
 
   const reorderPhotos = useCallback(async (gameId: string, photoIds: string[]) => {
     setError(null);
     try {
-      const res = await fetch(`/api/games/${gameId}/photos/reorder`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoIds }),
-      });
-      if (!res.ok) throw new Error('Failed to reorder photos');
-
-      const gameRes = await fetch(`/api/games/${gameId}`);
-      if (gameRes.ok) {
-        const gameData = await gameRes.json();
-        setGame(gameData);
+      await supabaseGameService.reorderPhotos(gameId, photoIds);
+      const updated = await supabaseGameService.getGame(gameId, true);
+      if (updated) {
+        setGame(updated);
+        setGames((prev) => prev.map((g) => (getGameId(g) === gameId ? updated : g)));
+        await realtimeBridge.broadcast(gameId, 'game:state', updated);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reorder photos');
     }
   }, []);
 
-  const updateSettings = useCallback((gameId: string, settings: Partial<GameSettings>) => {
-    const socket = getSocket();
-    socket.emit('admin:update-settings', { gameId, settings });
-    // Optimistic update
-    setGame((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        settings: { ...prev.settings, ...settings },
-      };
-    });
+  const updateSettings = useCallback(async (gameId: string, settings: Partial<GameSettings>) => {
+    try {
+      await supabaseGameService.updateSettings(gameId, settings);
+      setGame((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          settings: { ...prev.settings, ...settings },
+        };
+        realtimeBridge.broadcast(gameId, 'game:state', updated);
+        return updated;
+      });
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
-  // Game control helpers — emit with game's id
-  const emitAction = useCallback((event: string) => {
-    const gid = currentGameIdRef.current || (game ? getGameId(game) : null);
-    if (!gid) return;
-    const socket = getSocket();
-    socket.emit(event as any, { gameId: gid }, (res: any) => {
-      if (res && !res.success && res.error) {
-        setError(res.error);
+  // ─── Game Control Actions ───────────────────────────────────────────────────
+
+  const showAnswer = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur) return;
+    const gameId = getGameId(cur);
+    realtimeBridge.stopAutoTimer(gameId);
+
+    const totalTiles = cur.settings.gridRows * cur.settings.gridCols;
+    const allRevealed = Array.from({ length: totalTiles }, (_, i) => i);
+    const currentPhoto = cur.photos[cur.currentPhotoIndex];
+
+    const updatedState: GameState = {
+      ...cur,
+      status: 'revealing_answer',
+      revealState: cur.revealState
+        ? {
+            ...cur.revealState,
+            isAnswerShown: true,
+            revealedTiles: allRevealed,
+          }
+        : null,
+    };
+
+    setGame(updatedState);
+
+    await supabaseGameService.updateGameStatus(gameId, 'revealing_answer');
+    await supabaseGameService.updateRevealState(gameId, {
+      is_answer_shown: true,
+      revealed_tiles: allRevealed,
+    });
+
+    const answerData = {
+      answer: currentPhoto?.title || '',
+      photoUrl: currentPhoto?.filePath || '',
+    };
+
+    await realtimeBridge.broadcast(gameId, 'game:show-answer', answerData);
+    await realtimeBridge.broadcast(gameId, 'game:reveal-tile', {
+      tileIndex: -1,
+      revealedTiles: allRevealed,
+    });
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+  }, []);
+
+  const revealNext = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur || !cur.revealState) return;
+    const gameId = getGameId(cur);
+
+    const totalTiles = cur.settings.gridRows * cur.settings.gridCols;
+    const currentRevealed = cur.revealState.revealedTiles;
+
+    if (currentRevealed.length >= totalTiles) {
+      if (!cur.revealState.isAnswerShown) {
+        await showAnswer();
       }
+      return;
+    }
+
+    // Determine unrevealed tiles
+    const unrevealed = Array.from({ length: totalTiles }, (_, i) => i).filter(
+      (idx) => !currentRevealed.includes(idx)
+    );
+
+    let nextTileIndex: number;
+    if (cur.settings.revealOrder === 'sequential') {
+      nextTileIndex = unrevealed[0];
+    } else {
+      nextTileIndex = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+    }
+
+    const nextRevealed = [...currentRevealed, nextTileIndex];
+
+    const updatedState: GameState = {
+      ...cur,
+      revealState: {
+        ...cur.revealState,
+        revealedTiles: nextRevealed,
+      },
+    };
+
+    setGame(updatedState);
+
+    await supabaseGameService.updateRevealState(gameId, {
+      revealed_tiles: nextRevealed,
     });
-  }, [game]);
 
-  const startGame  = useCallback(() => emitAction('admin:start-game'), [emitAction]);
-  const pauseGame  = useCallback(() => emitAction('admin:pause-game'), [emitAction]);
-  const resumeGame = useCallback(() => emitAction('admin:resume-game'), [emitAction]);
-  const revealNext = useCallback(() => emitAction('admin:reveal-next'), [emitAction]);
-  const revealAll  = useCallback(() => emitAction('admin:reveal-all'), [emitAction]);
-  const skipPhoto  = useCallback(() => emitAction('admin:skip-photo'), [emitAction]);
-  const nextPhoto  = useCallback(() => emitAction('admin:next-photo'), [emitAction]);
-  const showAnswer = useCallback(() => emitAction('admin:show-answer'), [emitAction]);
-  const restartRound = useCallback(() => emitAction('admin:restart-round'), [emitAction]);
-  const endGame    = useCallback(() => emitAction('admin:end-game'), [emitAction]);
-  const showHint   = useCallback(() => emitAction('admin:show-hint'), [emitAction]);
+    await realtimeBridge.broadcast(gameId, 'game:reveal-tile', {
+      tileIndex: nextTileIndex,
+      revealedTiles: nextRevealed,
+    });
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
 
-  const deselectGame = useCallback(() => {
-    setGame(null);
-    currentGameIdRef.current = null;
+    if (nextRevealed.length >= totalTiles) {
+      realtimeBridge.stopAutoTimer(gameId);
+      await showAnswer();
+    }
+  }, [showAnswer]);
+
+  const startAutoRevealLoop = useCallback(
+    (gameId: string) => {
+      const cur = gameRef.current;
+      if (!cur) return;
+      const intervalSec = Math.max(1, cur.settings.revealInterval || 3);
+
+      realtimeBridge.startAutoTimer(
+        gameId,
+        (_elapsed) => {
+          const g = gameRef.current;
+          if (!g || !g.revealState || g.status !== 'active') return;
+          const remaining = Math.max(0, g.revealState.timerRemaining - 1);
+
+          setGame((prev) =>
+            prev && prev.revealState
+              ? {
+                  ...prev,
+                  revealState: { ...prev.revealState, timerRemaining: remaining },
+                }
+              : prev
+          );
+
+          realtimeBridge.broadcast(gameId, 'game:timer-tick', { remaining });
+
+          if (g.settings.timerEnabled && remaining <= 0) {
+            showAnswer();
+          }
+        },
+        () => {
+          revealNext();
+        },
+        () => {
+          showAnswer();
+        },
+        intervalSec
+      );
+    },
+    [revealNext, showAnswer]
+  );
+
+  const startGame = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur) return;
+    if (cur.photos.length === 0) {
+      setError('Please upload at least one photo to start the game.');
+      return;
+    }
+
+    const gameId = getGameId(cur);
+    const totalTiles = cur.settings.gridRows * cur.settings.gridCols;
+    const initialTileOrder = generateTileOrder(totalTiles, cur.settings.revealOrder);
+    const firstPhoto = cur.photos[0];
+
+    const updatedState: GameState = {
+      ...cur,
+      status: 'active',
+      currentPhotoIndex: 0,
+      revealState: {
+        photoId: firstPhoto?.id || '',
+        revealedTiles: [],
+        timerRemaining: cur.settings.revealDuration || 60,
+        isAnswerShown: false,
+        currentHintIndex: -1,
+      },
+    };
+
+    setGame(updatedState);
+
+    await supabaseGameService.updateGameStatus(gameId, 'active', 0);
+    await supabaseGameService.updateRevealState(gameId, {
+      photo_id: firstPhoto?.id || '',
+      revealed_tiles: [],
+      tile_order: initialTileOrder,
+      timer_remaining: cur.settings.revealDuration || 60,
+      is_answer_shown: false,
+      current_hint_index: -1,
+    });
+
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+
+    if (cur.settings.revealMode === 'auto') {
+      startAutoRevealLoop(gameId);
+    }
+  }, [startAutoRevealLoop]);
+
+  const pauseGame = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur) return;
+    const gameId = getGameId(cur);
+    realtimeBridge.stopAutoTimer(gameId);
+
+    const updatedState: GameState = { ...cur, status: 'paused' };
+    setGame(updatedState);
+
+    await supabaseGameService.updateGameStatus(gameId, 'paused');
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
   }, []);
+
+  const resumeGame = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur) return;
+    const gameId = getGameId(cur);
+
+    const updatedState: GameState = { ...cur, status: 'active' };
+    setGame(updatedState);
+
+    await supabaseGameService.updateGameStatus(gameId, 'active');
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+
+    if (cur.settings.revealMode === 'auto') {
+      startAutoRevealLoop(gameId);
+    }
+  }, [startAutoRevealLoop]);
+
+  const revealAll = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur || !cur.revealState) return;
+    const gameId = getGameId(cur);
+    realtimeBridge.stopAutoTimer(gameId);
+
+    const totalTiles = cur.settings.gridRows * cur.settings.gridCols;
+    const allRevealed = Array.from({ length: totalTiles }, (_, i) => i);
+
+    const updatedState: GameState = {
+      ...cur,
+      revealState: {
+        ...cur.revealState,
+        revealedTiles: allRevealed,
+      },
+    };
+
+    setGame(updatedState);
+
+    await supabaseGameService.updateRevealState(gameId, {
+      revealed_tiles: allRevealed,
+    });
+
+    await realtimeBridge.broadcast(gameId, 'game:reveal-tile', {
+      tileIndex: -1,
+      revealedTiles: allRevealed,
+    });
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+  }, []);
+
+  const endGame = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur) return;
+    const gameId = getGameId(cur);
+    realtimeBridge.stopAutoTimer(gameId);
+
+    const updatedState: GameState = { ...cur, status: 'finished' };
+    setGame(updatedState);
+
+    await supabaseGameService.updateGameStatus(gameId, 'finished');
+    await realtimeBridge.broadcast(gameId, 'game:finished', { scores: cur.scores });
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+  }, []);
+
+  const nextPhoto = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur) return;
+    const gameId = getGameId(cur);
+    realtimeBridge.stopAutoTimer(gameId);
+
+    const nextIndex = cur.currentPhotoIndex + 1;
+    if (nextIndex >= cur.photos.length) {
+      await endGame();
+      return;
+    }
+
+    const nextPhotoObj = cur.photos[nextIndex];
+    const totalTiles = cur.settings.gridRows * cur.settings.gridCols;
+    const newTileOrder = generateTileOrder(totalTiles, cur.settings.revealOrder);
+
+    const updatedState: GameState = {
+      ...cur,
+      status: 'active',
+      currentPhotoIndex: nextIndex,
+      revealState: {
+        photoId: nextPhotoObj?.id || '',
+        revealedTiles: [],
+        timerRemaining: cur.settings.revealDuration || 60,
+        isAnswerShown: false,
+        currentHintIndex: -1,
+      },
+    };
+
+    setGame(updatedState);
+
+    await supabaseGameService.updateGameStatus(gameId, 'active', nextIndex);
+    await supabaseGameService.updateRevealState(gameId, {
+      photo_id: nextPhotoObj?.id || '',
+      revealed_tiles: [],
+      tile_order: newTileOrder,
+      timer_remaining: cur.settings.revealDuration || 60,
+      is_answer_shown: false,
+      current_hint_index: -1,
+    });
+
+    await realtimeBridge.broadcast(gameId, 'game:photo-changed', { photoIndex: nextIndex });
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+
+    if (cur.settings.revealMode === 'auto') {
+      startAutoRevealLoop(gameId);
+    }
+  }, [endGame, startAutoRevealLoop]);
+
+  const restartRound = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur) return;
+    const gameId = getGameId(cur);
+    realtimeBridge.stopAutoTimer(gameId);
+
+    const currentPhotoObj = cur.photos[cur.currentPhotoIndex];
+    const totalTiles = cur.settings.gridRows * cur.settings.gridCols;
+    const newTileOrder = generateTileOrder(totalTiles, cur.settings.revealOrder);
+
+    const updatedState: GameState = {
+      ...cur,
+      status: 'active',
+      revealState: {
+        photoId: currentPhotoObj?.id || '',
+        revealedTiles: [],
+        timerRemaining: cur.settings.revealDuration || 60,
+        isAnswerShown: false,
+        currentHintIndex: -1,
+      },
+    };
+
+    setGame(updatedState);
+
+    await supabaseGameService.updateGameStatus(gameId, 'active');
+    await supabaseGameService.updateRevealState(gameId, {
+      photo_id: currentPhotoObj?.id || '',
+      revealed_tiles: [],
+      tile_order: newTileOrder,
+      timer_remaining: cur.settings.revealDuration || 60,
+      is_answer_shown: false,
+      current_hint_index: -1,
+    });
+
+    await realtimeBridge.broadcast(gameId, 'game:photo-changed', {
+      photoIndex: cur.currentPhotoIndex,
+    });
+    await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+
+    if (cur.settings.revealMode === 'auto') {
+      startAutoRevealLoop(gameId);
+    }
+  }, [startAutoRevealLoop]);
+
+  const showHint = useCallback(async () => {
+    const cur = gameRef.current;
+    if (!cur || !cur.revealState) return;
+    const currentPhoto = cur.photos[cur.currentPhotoIndex];
+    if (!currentPhoto) return;
+
+    const hints = Array.isArray(currentPhoto.hints) ? currentPhoto.hints : [];
+    if (cur.revealState.currentHintIndex < hints.length - 1) {
+      const nextIndex = cur.revealState.currentHintIndex + 1;
+      const gameId = getGameId(cur);
+
+      const updatedState: GameState = {
+        ...cur,
+        revealState: {
+          ...cur.revealState,
+          currentHintIndex: nextIndex,
+        },
+      };
+
+      setGame(updatedState);
+
+      await supabaseGameService.updateRevealState(gameId, {
+        current_hint_index: nextIndex,
+      });
+
+      const hintData = {
+        index: nextIndex,
+        hint: hints[nextIndex],
+      };
+
+      await realtimeBridge.broadcast(gameId, 'game:hint', hintData);
+      await realtimeBridge.broadcast(gameId, 'game:state', updatedState);
+    }
+  }, []);
+
+  const skipPhoto = useCallback(() => {
+    showAnswer();
+  }, [showAnswer]);
 
   return {
     game,

@@ -91,7 +91,13 @@ export default function PhotoList({ photos = [], gameId, onDelete, onReorder, cu
                 {/* Thumbnail */}
                 <div className="aspect-[4/3] rounded-xl overflow-hidden bg-navy-900 mb-3 border border-white/5">
                   <img
-                    src={photo.filePath?.startsWith('/') ? photo.filePath : `/${photo.filePath}`}
+                    src={
+                      photo.filePath?.startsWith('http') ||
+                      photo.filePath?.startsWith('data:') ||
+                      photo.filePath?.startsWith('/')
+                        ? photo.filePath
+                        : `/${photo.filePath}`
+                    }
                     alt={photo.title}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />

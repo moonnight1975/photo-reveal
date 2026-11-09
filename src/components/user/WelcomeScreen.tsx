@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, HelpCircle, Sparkles } from 'lucide-react';
+import { supabaseGameService } from '../../services/supabaseGameService';
 
 interface WelcomeScreenProps {
   onJoin: (gameId: string, playerName: string) => void;
@@ -38,8 +39,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/games')
-      .then((res) => (res.ok ? res.json() : []))
+    supabaseGameService
+      .getAllGames()
       .then((games) => {
         if (Array.isArray(games)) {
           setAvailableGames(games);

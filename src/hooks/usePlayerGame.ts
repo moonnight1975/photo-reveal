@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getSocket } from '../lib/socket';
+import { supabaseGameService } from '../services/supabaseGameService';
+import { realtimeBridge } from '../lib/supabaseRealtime';
 import type { GameState, PlayerScore } from '../types';
 
 const STORAGE_KEY_PLAYER_ID = 'photoReveal_playerId';
@@ -28,29 +29,44 @@ export function usePlayerGame(initialGameId?: string) {
 
   const guessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameIdRef = useRef<string | null>(initialGameId || localStorage.getItem(STORAGE_KEY_GAME_ID));
+  const gameRef = useRef<GameState | null>(null);
 
-  const joinGame = useCallback((gameId: string, name: string) => {
-    const socket = getSocket();
-    socket.emit('player:join', { gameId, playerName: name }, (result: any) => {
-      if (result && result.success && result.playerId) {
-        setPlayerId(result.playerId);
-        setPlayerName(name);
-        setJoined(true);
-        if (result.state) {
-          setGame(result.state);
-        }
-        gameIdRef.current = gameId;
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
 
-        localStorage.setItem(STORAGE_KEY_PLAYER_ID, result.playerId);
-        localStorage.setItem(STORAGE_KEY_GAME_ID, gameId);
-        localStorage.setItem(STORAGE_KEY_PLAYER_NAME, name);
+  const joinGame = useCallback(async (gameId: string, name: string) => {
+    try {
+      const player = await supabaseGameService.joinPlayer(gameId, name);
+      const gameState = await supabaseGameService.getGame(gameId, false);
 
-        socket.emit('game:request-state', { gameId });
+      setPlayerId(player.id);
+      setPlayerName(name);
+      setJoined(true);
+      if (gameState) setGame(gameState);
+      gameIdRef.current = gameId;
+
+      localStorage.setItem(STORAGE_KEY_PLAYER_ID, player.id);
+      localStorage.setItem(STORAGE_KEY_GAME_ID, gameId);
+      localStorage.setItem(STORAGE_KEY_PLAYER_NAME, name);
+
+      // Join Realtime channel
+      realtimeBridge.getChannel(gameId);
+
+      // Notify host/admin that a player joined
+      if (gameState) {
+        const updatedScores = gameState.scores;
+        await realtimeBridge.broadcast(gameId, 'game:scores-update', updatedScores);
       }
-    });
+    } catch (err) {
+      console.error('Failed to join game via Supabase:', err);
+    }
   }, []);
 
   const leaveGame = useCallback(() => {
+    if (gameIdRef.current) {
+      realtimeBridge.leaveChannel(gameIdRef.current);
+    }
     localStorage.removeItem(STORAGE_KEY_PLAYER_ID);
     localStorage.removeItem(STORAGE_KEY_GAME_ID);
     setJoined(false);
@@ -59,74 +75,71 @@ export function usePlayerGame(initialGameId?: string) {
     gameIdRef.current = null;
   }, []);
 
-  const submitGuess = useCallback((guess: string) => {
-    if (!playerId || !gameIdRef.current) return;
-    const socket = getSocket();
-    socket.emit('player:guess', {
-      gameId: gameIdRef.current,
-      playerId,
-      guess,
-    });
-  }, [playerId]);
-
-  const requestState = useCallback((gameId: string) => {
-    const socket = getSocket();
-    socket.emit('game:request-state', { gameId });
+  const requestState = useCallback(async (gameId: string) => {
+    const state = await supabaseGameService.getGame(gameId, false);
+    if (state) setGame(state);
   }, []);
 
-  useEffect(() => {
-    const socket = getSocket();
+  const submitGuess = useCallback(
+    async (guess: string) => {
+      const activeGame = gameRef.current;
+      const pid = playerId;
+      const gid = gameIdRef.current;
 
-    const storedPlayerId = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
-    const storedGameId = localStorage.getItem(STORAGE_KEY_GAME_ID);
+      if (!pid || !gid || !activeGame || !activeGame.currentPhoto) return;
+      if (activeGame.revealState?.isAnswerShown || activeGame.status !== 'active') {
+        setLastGuessResult({ isCorrect: false, message: 'Guesses are not open right now.' });
+        return;
+      }
+
+      const totalTiles = activeGame.settings.gridRows * activeGame.settings.gridCols;
+      const revealedTilesCount = activeGame.revealState?.revealedTiles.length || 0;
+
+      try {
+        const result = await supabaseGameService.submitGuess(
+          gid,
+          pid,
+          guess,
+          activeGame.currentPhoto,
+          revealedTilesCount,
+          totalTiles,
+          activeGame.settings.multipleAttempts
+        );
+
+        setLastGuessResult(result);
+        if (guessTimerRef.current) clearTimeout(guessTimerRef.current);
+        guessTimerRef.current = setTimeout(() => {
+          setLastGuessResult(null);
+        }, 3000);
+
+        if (result.isCorrect) {
+          // Refresh scores
+          const refreshed = await supabaseGameService.getGame(gid, false);
+          if (refreshed) {
+            setGame(refreshed);
+            await realtimeBridge.broadcast(gid, 'game:scores-update', refreshed.scores);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to submit guess:', err);
+      }
+    },
+    [playerId]
+  );
+
+  useEffect(() => {
+    const targetGameId = initialGameId || localStorage.getItem(STORAGE_KEY_GAME_ID);
     const storedName = localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
 
-    // Target game is URL param if provided, otherwise stored game
-    const targetGameId = initialGameId || storedGameId;
-
     if (targetGameId && storedName) {
-      setPlayerName(storedName);
-      gameIdRef.current = targetGameId;
-
-      socket.emit('player:join', { gameId: targetGameId, playerName: storedName }, (result: any) => {
-        if (result && result.success && result.playerId) {
-          setPlayerId(result.playerId);
-          localStorage.setItem(STORAGE_KEY_PLAYER_ID, result.playerId);
-          localStorage.setItem(STORAGE_KEY_GAME_ID, targetGameId);
-          setJoined(true);
-          if (result.state) {
-            setGame(result.state);
-          }
-          socket.emit('game:request-state', { gameId: targetGameId });
-        } else {
-          // If stored game is no longer valid, clear stale data
-          if (!initialGameId) {
-            localStorage.removeItem(STORAGE_KEY_PLAYER_ID);
-            localStorage.removeItem(STORAGE_KEY_GAME_ID);
-          }
-          setJoined(false);
-          setGame(null);
-        }
-      });
+      joinGame(targetGameId, storedName);
     }
+  }, [initialGameId, joinGame]);
 
-    // Re-join room on socket reconnect
-    const onConnect = () => {
-      const activeGameId = gameIdRef.current || initialGameId || localStorage.getItem(STORAGE_KEY_GAME_ID);
-      const activeName = playerName || localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
-      if (activeGameId && activeName) {
-        socket.emit('player:join', { gameId: activeGameId, playerName: activeName }, (result: any) => {
-          if (result && result.success) {
-            setJoined(true);
-            if (result.state) setGame(result.state);
-            socket.emit('game:request-state', { gameId: activeGameId });
-          }
-        });
-      }
-    };
-    socket.on('connect', onConnect);
-
-    // ─── Socket Listeners ──────────────────────────────────────
+  // Subscribe to real-time events
+  useEffect(() => {
+    const activeGameId = gameIdRef.current || initialGameId;
+    if (!activeGameId) return;
 
     const onGameState = (state: GameState) => {
       setGame(state);
@@ -160,14 +173,6 @@ export function usePlayerGame(initialGameId?: string) {
           },
         };
       });
-    };
-
-    const onAnswerResult = (data: GuessResult) => {
-      setLastGuessResult(data);
-      if (guessTimerRef.current) clearTimeout(guessTimerRef.current);
-      guessTimerRef.current = setTimeout(() => {
-        setLastGuessResult(null);
-      }, 3000);
     };
 
     const onShowAnswer = (data: { answer: string; photoUrl: string }) => {
@@ -212,7 +217,6 @@ export function usePlayerGame(initialGameId?: string) {
     };
 
     const onPhotoChanged = (_data: { photoIndex: number }) => {
-      // Reset local state for new photo
       setRevealedHints([]);
       setLastGuessResult(null);
       if (guessTimerRef.current) clearTimeout(guessTimerRef.current);
@@ -227,31 +231,26 @@ export function usePlayerGame(initialGameId?: string) {
       });
     };
 
-    socket.on('game:state', onGameState);
-    socket.on('game:state-update', onGameState);
-    socket.on('game:reveal-tile', onRevealTile);
-    socket.on('game:tile-revealed', onRevealTile);
-    socket.on('game:timer-tick', onTimerTick);
-    socket.on('game:answer-result', onAnswerResult);
-    socket.on('game:show-answer', onShowAnswer);
-    socket.on('game:scores-update', onScoresUpdate);
-    socket.on('game:hint', onHint);
-    socket.on('game:photo-changed', onPhotoChanged);
-    socket.on('game:finished', onFinished);
+    realtimeBridge.on(activeGameId, 'game:state', onGameState);
+    realtimeBridge.on(activeGameId, 'game:state-update', onGameState);
+    realtimeBridge.on(activeGameId, 'game:reveal-tile', onRevealTile);
+    realtimeBridge.on(activeGameId, 'game:timer-tick', onTimerTick);
+    realtimeBridge.on(activeGameId, 'game:show-answer', onShowAnswer);
+    realtimeBridge.on(activeGameId, 'game:scores-update', onScoresUpdate);
+    realtimeBridge.on(activeGameId, 'game:hint', onHint);
+    realtimeBridge.on(activeGameId, 'game:photo-changed', onPhotoChanged);
+    realtimeBridge.on(activeGameId, 'game:finished', onFinished);
 
     return () => {
-      socket.off('connect', onConnect);
-      socket.off('game:state', onGameState);
-      socket.off('game:state-update', onGameState);
-      socket.off('game:reveal-tile', onRevealTile);
-      socket.off('game:tile-revealed', onRevealTile);
-      socket.off('game:timer-tick', onTimerTick);
-      socket.off('game:answer-result', onAnswerResult);
-      socket.off('game:show-answer', onShowAnswer);
-      socket.off('game:scores-update', onScoresUpdate);
-      socket.off('game:hint', onHint);
-      socket.off('game:photo-changed', onPhotoChanged);
-      socket.off('game:finished', onFinished);
+      realtimeBridge.off(activeGameId, 'game:state', onGameState);
+      realtimeBridge.off(activeGameId, 'game:state-update', onGameState);
+      realtimeBridge.off(activeGameId, 'game:reveal-tile', onRevealTile);
+      realtimeBridge.off(activeGameId, 'game:timer-tick', onTimerTick);
+      realtimeBridge.off(activeGameId, 'game:show-answer', onShowAnswer);
+      realtimeBridge.off(activeGameId, 'game:scores-update', onScoresUpdate);
+      realtimeBridge.off(activeGameId, 'game:hint', onHint);
+      realtimeBridge.off(activeGameId, 'game:photo-changed', onPhotoChanged);
+      realtimeBridge.off(activeGameId, 'game:finished', onFinished);
       if (guessTimerRef.current) clearTimeout(guessTimerRef.current);
     };
   }, [initialGameId]);

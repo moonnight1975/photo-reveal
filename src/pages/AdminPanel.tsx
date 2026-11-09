@@ -224,9 +224,32 @@ export default function AdminPanel() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-red-500/10 border-b border-red-500/20 px-6 py-3 text-sm text-red-400"
+            className="bg-red-500/10 border-b border-red-500/20 px-6 py-4 text-sm text-red-300"
           >
-            {error}
+            <div className="max-w-[1800px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-red-400">{error}</p>
+                {error.includes('table') && (
+                  <p className="text-xs text-white/60 mt-1">
+                    Database tables need to be created in your Supabase project. Run the SQL script from{' '}
+                    <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-300 font-mono">
+                      supabase/schema.sql
+                    </code>{' '}
+                    in your Supabase SQL Editor.
+                  </p>
+                )}
+              </div>
+              {error.includes('table') && (
+                <a
+                  href="https://supabase.com/dashboard/project/floplvhatnjoihuycoxn/sql"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 bg-gaming-purple/20 border border-gaming-purple/40 text-purple-300 hover:bg-gaming-purple/30 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors inline-flex items-center gap-1.5"
+                >
+                  Open Supabase SQL Editor ↗
+                </a>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

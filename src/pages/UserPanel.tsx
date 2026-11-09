@@ -43,9 +43,11 @@ export const UserPanel: React.FC = () => {
   }
 
   const currentPhoto = game.photos?.[game.currentPhotoIndex];
-  const photoUrl = currentPhoto?.filePath
-    ? (currentPhoto.filePath.startsWith('/') ? currentPhoto.filePath : `/${currentPhoto.filePath}`)
-    : '';
+  const rawPath = currentPhoto?.filePath || '';
+  const photoUrl =
+    rawPath.startsWith('http') || rawPath.startsWith('data:') || rawPath.startsWith('/')
+      ? rawPath
+      : `/${rawPath}`;
   const isAnswerShown = game.revealState?.isAnswerShown || false;
   const isGameOver = game.status === 'finished';
   const isRevealingAnswer = game.status === 'revealing_answer' || isAnswerShown;
