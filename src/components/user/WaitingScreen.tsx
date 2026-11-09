@@ -6,6 +6,7 @@ interface WaitingScreenProps {
   gameName: string;
   playerName: string;
   playerCount?: number;
+  onLeave?: () => void;
 }
 
 const tips = [
@@ -20,6 +21,7 @@ export const WaitingScreen: React.FC<WaitingScreenProps> = ({
   gameName,
   playerName,
   playerCount,
+  onLeave,
 }) => {
   const [tipIndex, setTipIndex] = useState(0);
 
@@ -145,6 +147,22 @@ export const WaitingScreen: React.FC<WaitingScreenProps> = ({
             </motion.div>
           </AnimatePresence>
         </motion.div>
+
+        {onLeave && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-6"
+          >
+            <button
+              onClick={onLeave}
+              className="text-xs text-white/40 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+            >
+              ← Leave Game / Switch Code
+            </button>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );

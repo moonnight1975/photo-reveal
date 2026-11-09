@@ -12,7 +12,7 @@ interface GuessResult {
   score?: number;
 }
 
-export function usePlayerGame() {
+export function usePlayerGame(initialGameId?: string) {
   const [game, setGame] = useState<GameState | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(
     () => localStorage.getItem(STORAGE_KEY_PLAYER_ID)
@@ -27,12 +27,12 @@ export function usePlayerGame() {
   const [finalScores, setFinalScores] = useState<PlayerScore[]>([]);
 
   const guessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const gameIdRef = useRef<string | null>(localStorage.getItem(STORAGE_KEY_GAME_ID));
+  const gameIdRef = useRef<string | null>(initialGameId || localStorage.getItem(STORAGE_KEY_GAME_ID));
 
   const joinGame = useCallback((gameId: string, name: string) => {
     const socket = getSocket();
     socket.emit('player:join', { gameId, playerName: name }, (result: any) => {
-      if (result.success && result.playerId) {
+      if (result && result.success && result.playerId) {
         setPlayerId(result.playerId);
         setPlayerName(name);
         setJoined(true);
@@ -48,6 +48,15 @@ export function usePlayerGame() {
         socket.emit('game:request-state', { gameId });
       }
     });
+  }, []);
+
+  const leaveGame = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY_PLAYER_ID);
+    localStorage.removeItem(STORAGE_KEY_GAME_ID);
+    setJoined(false);
+    setGame(null);
+    setPlayerId(null);
+    gameIdRef.current = null;
   }, []);
 
   const submitGuess = useCallback((guess: string) => {
@@ -68,35 +77,63 @@ export function usePlayerGame() {
   useEffect(() => {
     const socket = getSocket();
 
-    // Attempt rejoin on mount
     const storedPlayerId = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
     const storedGameId = localStorage.getItem(STORAGE_KEY_GAME_ID);
     const storedName = localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
 
-    if (storedPlayerId && storedGameId && storedName) {
-      setPlayerId(storedPlayerId);
-      setPlayerName(storedName);
-      gameIdRef.current = storedGameId;
+    // Target game is URL param if provided, otherwise stored game
+    const targetGameId = initialGameId || storedGameId;
 
-      // Rejoin in case server restarted
-      socket.emit('player:join', { gameId: storedGameId, playerName: storedName }, (result: any) => {
-        if (result.success && result.playerId) {
+    if (targetGameId && storedName) {
+      setPlayerName(storedName);
+      gameIdRef.current = targetGameId;
+
+      socket.emit('player:join', { gameId: targetGameId, playerName: storedName }, (result: any) => {
+        if (result && result.success && result.playerId) {
           setPlayerId(result.playerId);
           localStorage.setItem(STORAGE_KEY_PLAYER_ID, result.playerId);
+          localStorage.setItem(STORAGE_KEY_GAME_ID, targetGameId);
           setJoined(true);
           if (result.state) {
             setGame(result.state);
           }
-          socket.emit('game:request-state', { gameId: storedGameId });
+          socket.emit('game:request-state', { gameId: targetGameId });
+        } else {
+          // If stored game is no longer valid, clear stale data
+          if (!initialGameId) {
+            localStorage.removeItem(STORAGE_KEY_PLAYER_ID);
+            localStorage.removeItem(STORAGE_KEY_GAME_ID);
+          }
+          setJoined(false);
+          setGame(null);
         }
       });
     }
+
+    // Re-join room on socket reconnect
+    const onConnect = () => {
+      const activeGameId = gameIdRef.current || initialGameId || localStorage.getItem(STORAGE_KEY_GAME_ID);
+      const activeName = playerName || localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
+      if (activeGameId && activeName) {
+        socket.emit('player:join', { gameId: activeGameId, playerName: activeName }, (result: any) => {
+          if (result && result.success) {
+            setJoined(true);
+            if (result.state) setGame(result.state);
+            socket.emit('game:request-state', { gameId: activeGameId });
+          }
+        });
+      }
+    };
+    socket.on('connect', onConnect);
 
     // ─── Socket Listeners ──────────────────────────────────────
 
     const onGameState = (state: GameState) => {
       setGame(state);
       setJoined(true);
+      if (state.status === 'active' || state.status === 'waiting') {
+        setGameFinished(false);
+      }
     };
 
     const onRevealTile = (data: { tileIndex: number; revealedTiles: number[] }) => {
@@ -193,6 +230,7 @@ export function usePlayerGame() {
     socket.on('game:state', onGameState);
     socket.on('game:state-update', onGameState);
     socket.on('game:reveal-tile', onRevealTile);
+    socket.on('game:tile-revealed', onRevealTile);
     socket.on('game:timer-tick', onTimerTick);
     socket.on('game:answer-result', onAnswerResult);
     socket.on('game:show-answer', onShowAnswer);
@@ -202,9 +240,11 @@ export function usePlayerGame() {
     socket.on('game:finished', onFinished);
 
     return () => {
+      socket.off('connect', onConnect);
       socket.off('game:state', onGameState);
       socket.off('game:state-update', onGameState);
       socket.off('game:reveal-tile', onRevealTile);
+      socket.off('game:tile-revealed', onRevealTile);
       socket.off('game:timer-tick', onTimerTick);
       socket.off('game:answer-result', onAnswerResult);
       socket.off('game:show-answer', onShowAnswer);
@@ -214,7 +254,7 @@ export function usePlayerGame() {
       socket.off('game:finished', onFinished);
       if (guessTimerRef.current) clearTimeout(guessTimerRef.current);
     };
-  }, []);
+  }, [initialGameId]);
 
   return {
     game,
@@ -226,6 +266,7 @@ export function usePlayerGame() {
     gameFinished,
     finalScores,
     joinGame,
+    leaveGame,
     submitGuess,
     requestState,
   };

@@ -21,8 +21,9 @@ export const UserPanel: React.FC = () => {
     lastGuessResult,
     revealedHints,
     joinGame,
+    leaveGame,
     submitGuess,
-  } = usePlayerGame();
+  } = usePlayerGame(defaultGameId);
 
   // If user hasn't joined a game yet
   if (!joined || !game) {
@@ -36,12 +37,15 @@ export const UserPanel: React.FC = () => {
         gameName={game.name || 'Photo Reveal Game'}
         playerName={playerName}
         playerCount={game.scores?.length || 1}
+        onLeave={leaveGame}
       />
     );
   }
 
   const currentPhoto = game.photos?.[game.currentPhotoIndex];
-  const photoUrl = currentPhoto?.filePath || '';
+  const photoUrl = currentPhoto?.filePath
+    ? (currentPhoto.filePath.startsWith('/') ? currentPhoto.filePath : `/${currentPhoto.filePath}`)
+    : '';
   const isAnswerShown = game.revealState?.isAnswerShown || false;
   const isGameOver = game.status === 'finished';
   const isRevealingAnswer = game.status === 'revealing_answer' || isAnswerShown;
@@ -65,6 +69,20 @@ export const UserPanel: React.FC = () => {
           playerName={playerName}
           isLastPhoto={isLastPhoto}
         />
+      </div>
+    );
+  }
+
+  if (!currentPhoto && game.status === 'active') {
+    return (
+      <div className="min-h-screen bg-navy-950 text-white flex flex-col justify-center items-center p-4">
+        <div className="text-center max-w-md bg-navy-900/80 p-8 rounded-3xl border border-white/10">
+          <p className="text-xl font-bold mb-2">No photos in this game yet</p>
+          <p className="text-white/50 text-sm mb-6">Waiting for the host to add photos.</p>
+          <button onClick={leaveGame} className="btn-secondary text-sm px-4 py-2">
+            ← Switch Game
+          </button>
+        </div>
       </div>
     );
   }
@@ -103,7 +121,7 @@ export const UserPanel: React.FC = () => {
           </div>
 
           {/* Timer and Progress */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {game.settings?.timerEnabled && (
               <GameTimer
                 remaining={timerRemaining}
@@ -111,6 +129,13 @@ export const UserPanel: React.FC = () => {
                 isPaused={isPaused}
               />
             )}
+            <button
+              onClick={leaveGame}
+              className="text-xs text-white/40 hover:text-white px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+              title="Exit game"
+            >
+              Exit
+            </button>
           </div>
         </div>
       </header>
