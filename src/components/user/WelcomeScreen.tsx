@@ -151,9 +151,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
               <input
                 type="text"
                 value={gameId}
-                onChange={(e) => setGameId(e.target.value)}
-                placeholder="Enter game code"
-                className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all font-mono text-xs sm:text-sm"
+                onChange={(e) => setGameId(e.target.value.toUpperCase())}
+                placeholder="e.g. FLASH or PIXEL"
+                maxLength={10}
+                className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all font-mono text-xs sm:text-sm uppercase tracking-wider font-semibold"
               />
               {availableGames.length > 0 && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-1 sm:gap-1.5">
@@ -163,13 +164,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
                       key={g.id}
                       type="button"
                       onClick={() => setGameId(g.id)}
-                      className={`text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border transition-all truncate max-w-[140px] sm:max-w-none ${
-                        gameId === g.id
+                      className={`text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border transition-all truncate max-w-[160px] sm:max-w-none ${
+                        gameId.toUpperCase() === g.id.toUpperCase()
                           ? 'bg-purple-600/40 border-purple-500 text-purple-200 font-semibold shadow-sm'
                           : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      {g.name}
+                      <span className="font-mono font-bold text-gaming-purple mr-1">{g.id}</span>
+                      <span className="text-white/50">({g.name})</span>
                     </button>
                   ))}
                 </div>

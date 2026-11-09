@@ -10,9 +10,16 @@ import { GameTimer } from '../components/user/GameTimer';
 import { GameOver } from '../components/user/GameOver';
 import { Lightbulb, Trophy, Sparkles } from 'lucide-react';
 
-export const UserPanel: React.FC = () => {
+interface UserPanelProps {
+  embeddedGameId?: string;
+  onExit?: () => void;
+  autoJoinName?: string;
+}
+
+export const UserPanel: React.FC<UserPanelProps> = ({ embeddedGameId, onExit, autoJoinName }) => {
   const [searchParams] = useSearchParams();
-  const defaultGameId = searchParams.get('gameId') || undefined;
+  const defaultGameId = embeddedGameId || searchParams.get('gameId') || undefined;
+  const effectiveAutoJoin = autoJoinName || (embeddedGameId ? 'Host Preview' : undefined);
 
   const {
     game,
@@ -23,7 +30,12 @@ export const UserPanel: React.FC = () => {
     joinGame,
     leaveGame,
     submitGuess,
-  } = usePlayerGame(defaultGameId);
+  } = usePlayerGame(defaultGameId, effectiveAutoJoin);
+
+  const handleExit = () => {
+    leaveGame();
+    if (onExit) onExit();
+  };
 
   // If user hasn't joined a game yet
   if (!joined || !game) {
@@ -37,7 +49,7 @@ export const UserPanel: React.FC = () => {
         gameName={game.name || 'Photo Reveal Game'}
         playerName={playerName}
         playerCount={game.scores?.length || 1}
-        onLeave={leaveGame}
+        onLeave={handleExit}
       />
     );
   }
@@ -81,7 +93,7 @@ export const UserPanel: React.FC = () => {
         <div className="text-center max-w-md bg-navy-900/80 p-8 rounded-3xl border border-white/10">
           <p className="text-xl font-bold mb-2">No photos in this game yet</p>
           <p className="text-white/50 text-sm mb-6">Waiting for the host to add photos.</p>
-          <button onClick={leaveGame} className="btn-secondary text-sm px-4 py-2">
+          <button onClick={handleExit} className="btn-secondary text-sm px-4 py-2">
             ← Switch Game
           </button>
         </div>
@@ -132,7 +144,7 @@ export const UserPanel: React.FC = () => {
               />
             )}
             <button
-              onClick={leaveGame}
+              onClick={handleExit}
               className="text-xs text-white/40 hover:text-white px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5 shrink-0"
               title="Exit game"
             >

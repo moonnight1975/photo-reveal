@@ -77,7 +77,7 @@ export default function GameControls({
     <div className="space-y-5">
       {/* Status Bar */}
       <div className="card flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <motion.div
               animate={isActive ? { scale: [1, 1.3, 1] } : {}}
@@ -85,6 +85,12 @@ export default function GameControls({
               className={`w-2.5 h-2.5 rounded-full ${config.dotClass}`}
             />
             <span className={`text-sm font-semibold ${config.color}`}>{config.label}</span>
+          </div>
+
+          {/* Game Code Display */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 font-mono text-xs">
+            <span className="text-white/40 text-[10px] font-medium tracking-wide">CODE:</span>
+            <span className="text-gaming-purple font-bold tracking-widest">{game.id}</span>
           </div>
         </div>
 

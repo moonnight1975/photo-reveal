@@ -7,6 +7,29 @@ export function normalizeGuess(str: string): string {
   return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+const MEMORABLE_WORDS = [
+  'PIXEL', 'FLASH', 'SHARP', 'FOCUS', 'GUESS',
+  'PHOTO', 'SMART', 'SWIFT', 'BRAIN', 'SPARK',
+  'TIGER', 'ALPHA', 'SUPER', 'MAGIC', 'QUEST',
+  'CHAMP', 'NINJA', 'LUCKY', 'SHINE', 'SPEED',
+  'TURBO', 'CROWN', 'STARS', 'SOLAR', 'RADAR',
+  'VIVID', 'POWER', 'STORM', 'COMET', 'ORBIT'
+];
+
+export function generateGameCode(): string {
+  // 5-character clean uppercase code (words or alphanumeric)
+  if (Math.random() > 0.3) {
+    const word = MEMORABLE_WORDS[Math.floor(Math.random() * MEMORABLE_WORDS.length)];
+    return word;
+  }
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let result = '';
+  for (let i = 0; i < 5; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 export function generateTileOrder(totalTiles: number, order: string = 'random'): number[] {
   const indices = Array.from({ length: totalTiles }, (_, i) => i);
   if (order === 'random') {
@@ -148,10 +171,13 @@ export const supabaseGameService = {
   },
 
   /**
-   * Fetch single game by ID
+   * Fetch single game by ID (supports case-insensitive short code match)
    */
   async getGame(gameId: string, isAdmin = false): Promise<GameState | null> {
-    const { data: g, error } = await supabase
+    const cleanId = (gameId || '').trim();
+    if (!cleanId) return null;
+
+    let { data: g, error } = await supabase
       .from('games')
       .select(`
         *,
@@ -160,10 +186,25 @@ export const supabaseGameService = {
         players (*),
         game_reveal_state (*)
       `)
-      .eq('id', gameId)
-      .single();
+      .eq('id', cleanId)
+      .maybeSingle();
 
-    if (error || !g) {
+    if (!g) {
+      const { data: gIlike } = await supabase
+        .from('games')
+        .select(`
+          *,
+          photos (*),
+          game_settings (*),
+          players (*),
+          game_reveal_state (*)
+        `)
+        .ilike('id', cleanId)
+        .maybeSingle();
+      g = gIlike;
+    }
+
+    if (!g) {
       return null;
     }
 
@@ -174,10 +215,10 @@ export const supabaseGameService = {
   },
 
   /**
-   * Create a new game
+   * Create a new game with a clean short 5-character code
    */
-  async createGame(name: string): Promise<GameState> {
-    const id = uuidv4();
+  async createGame(name: string, customCode?: string): Promise<GameState> {
+    const id = (customCode?.trim().toUpperCase()) || generateGameCode();
     const createdAt = new Date().toISOString();
 
     // 1. Insert Game
@@ -360,11 +401,14 @@ export const supabaseGameService = {
    * Join / register player
    */
   async joinPlayer(gameId: string, playerName: string): Promise<PlayerScore> {
+    const game = await this.getGame(gameId, false);
+    const resolvedGameId = game?.id || gameId;
+
     // Check if player with same name already exists in this game
     const { data: existing } = await supabase
       .from('players')
       .select('*')
-      .eq('game_id', gameId)
+      .eq('game_id', resolvedGameId)
       .eq('name', playerName)
       .maybeSingle();
 
@@ -383,7 +427,7 @@ export const supabaseGameService = {
       .from('players')
       .insert({
         id,
-        game_id: gameId,
+        game_id: resolvedGameId,
         name: playerName,
         score: 0,
         correct_answers: 0,

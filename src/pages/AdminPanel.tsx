@@ -10,6 +10,12 @@ import {
   ChevronDown,
   Camera,
   Layers,
+  Copy,
+  Check,
+  ExternalLink,
+  Shield,
+  Eye,
+  Share2,
 } from 'lucide-react';
 import { useAdminGame } from '../hooks/useAdminGame';
 import PhotoUpload from '../components/admin/PhotoUpload';
@@ -17,6 +23,7 @@ import PhotoList from '../components/admin/PhotoList';
 import RevealSettings from '../components/admin/RevealSettings';
 import GameControls from '../components/admin/GameControls';
 import GamePreview from '../components/admin/GamePreview';
+import { UserPanel } from './UserPanel';
 import { DEFAULT_SETTINGS } from '../types';
 
 const statusBadge: Record<string, { label: string; cls: string }> = {
@@ -57,17 +64,35 @@ export default function AdminPanel() {
   const [showNewGame, setShowNewGame] = useState(false);
   const [showSelector, setShowSelector] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [viewMode, setViewMode] = useState<'admin' | 'player'>('admin');
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyLink = (code: string) => {
+    const url = `${window.location.origin}/play?gameId=${encodeURIComponent(code)}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   const handleCreateGame = async () => {
     if (!newGameName.trim()) return;
     await createGame(newGameName.trim());
     setNewGameName('');
     setShowNewGame(false);
+    setViewMode('admin');
   };
 
   const handleSelectGame = async (gameId: string) => {
     await selectGame(gameId);
     setShowSelector(false);
+    setViewMode('admin');
   };
 
   const isGameActive = game && (game.status === 'active' || game.status === 'paused');
@@ -148,7 +173,12 @@ export default function AdminPanel() {
                               }`}
                             >
                               <div className="min-w-0 mr-2">
-                                <div className="text-sm font-medium text-white truncate">{g.name}</div>
+                                <div className="text-sm font-medium text-white truncate flex items-center gap-1.5">
+                                  <span>{g.name}</span>
+                                  <span className="font-mono text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-purple-300 font-semibold shrink-0">
+                                    {g.id}
+                                  </span>
+                                </div>
                                 <div className="text-[10px] text-white/30 mt-0.5">
                                   {g.photos?.length ?? 0} photos
                                 </div>
@@ -169,17 +199,67 @@ export default function AdminPanel() {
             </div>
           </div>
 
-          {/* New Game Button & Player View Link */}
+          {/* Right Header Actions: Game Code, View Toggle & New Game */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {game && (
-              <a
-                href={`/play?gameId=${game.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-secondary text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 text-electric-400 hover:text-electric-300 border-electric-500/30 hover:border-electric-500/60"
-              >
-                <span>Player View ↗</span>
-              </a>
+              <>
+                {/* 5-Character Game Code Badge */}
+                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1 sm:px-3 sm:py-1.5 shadow-sm">
+                  <span className="text-[10px] sm:text-xs text-white/40 uppercase tracking-wider font-semibold">Code:</span>
+                  <span className="font-mono text-xs sm:text-sm font-bold text-gaming-purple tracking-widest">{game.id}</span>
+                  <button
+                    onClick={() => handleCopyCode(game.id)}
+                    className="p-1 hover:bg-white/10 rounded-md text-white/50 hover:text-white transition-colors"
+                    title="Copy 5-letter game code"
+                  >
+                    {copiedCode ? <Check className="w-3.5 h-3.5 text-gaming-green" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => handleCopyLink(game.id)}
+                    className="p-1 hover:bg-white/10 rounded-md text-white/50 hover:text-white transition-colors"
+                    title="Copy player invite link"
+                  >
+                    {copiedLink ? <Check className="w-3.5 h-3.5 text-gaming-green" /> : <Share2 className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+
+                {/* View Mode Toggle: Host Controls vs Player View */}
+                <div className="flex items-center p-0.5 bg-white/5 border border-white/10 rounded-xl">
+                  <button
+                    onClick={() => setViewMode('admin')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      viewMode === 'admin'
+                        ? 'bg-gaming-purple text-white shadow-md shadow-gaming-purple/30'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Host Controls</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('player')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      viewMode === 'player'
+                        ? 'bg-electric-500 text-navy-950 font-bold shadow-md shadow-electric-500/30'
+                        : 'text-electric-400 hover:text-electric-300 hover:bg-white/5'
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Player View</span>
+                  </button>
+                </div>
+
+                {/* External Tab Launcher */}
+                <a
+                  href={`/play?gameId=${game.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1.5 sm:p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-xl border border-white/5 transition-colors"
+                  title="Open Player View in separate tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </a>
+              </>
             )}
 
             {showNewGame ? (
@@ -295,14 +375,18 @@ export default function AdminPanel() {
                       className="card cursor-pointer hover:border-gaming-purple/30 hover:shadow-gaming-purple/10 hover:shadow-lg transition-all group"
                       onClick={() => handleSelectGame(g.id)}
                     >
-                      <div className="flex items-start justify-between mb-4">
-                        <h3 className="font-semibold text-white group-hover:text-gaming-purple transition-colors">
-                          {g.name}
-                        </h3>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold bg-white/5 border border-white/10 px-2 py-0.5 rounded text-purple-300">
+                          <span className="text-white/40 text-[10px]">CODE:</span>
+                          <span className="tracking-wider text-gaming-purple font-bold">{g.id}</span>
+                        </div>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium flex-shrink-0 ${badge.cls}`}>
                           {badge.label}
                         </span>
                       </div>
+                      <h3 className="font-semibold text-white group-hover:text-gaming-purple transition-colors mb-3.5 truncate">
+                        {g.name}
+                      </h3>
 
                       <div className="flex items-center gap-4 text-xs text-white/40">
                         <div className="flex items-center gap-1.5">
@@ -324,6 +408,43 @@ export default function AdminPanel() {
                 })}
               </div>
             )}
+          </div>
+        ) : viewMode === 'player' ? (
+          /* ─── Player View: Embedded User Panel ────────────── */
+          <div className="flex flex-col min-h-[calc(100vh-65px)]">
+            <div className="bg-gradient-to-r from-electric-950/60 via-purple-950/40 to-navy-900 border-b border-electric-500/20 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <span className="w-2 h-2 rounded-full bg-electric-400 animate-pulse" />
+                <span className="text-white/70">Player Live View for:</span>
+                <span className="font-bold text-white">{game.name}</span>
+                <span className="font-mono bg-white/10 px-2 py-0.5 rounded text-electric-300 font-semibold text-xs ml-1">
+                  {game.id}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleCopyLink(game.id)}
+                  className="btn-secondary text-xs px-2.5 py-1 flex items-center gap-1 text-white/70 hover:text-white"
+                >
+                  {copiedLink ? <Check className="w-3 h-3 text-gaming-green" /> : <Share2 className="w-3 h-3" />}
+                  <span>{copiedLink ? 'Copied Link!' : 'Share Link'}</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('admin')}
+                  className="btn-primary text-xs px-3 py-1 flex items-center gap-1 shadow-sm"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Back to Host Controls</span>
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 relative">
+              <UserPanel
+                embeddedGameId={game.id}
+                autoJoinName="Host Preview"
+                onExit={() => setViewMode('admin')}
+              />
+            </div>
           </div>
         ) : (
           /* ─── Game Selected: Dashboard Layout ────────────── */

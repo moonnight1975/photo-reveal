@@ -13,13 +13,13 @@ interface GuessResult {
   score?: number;
 }
 
-export function usePlayerGame(initialGameId?: string) {
+export function usePlayerGame(initialGameId?: string, autoJoinName?: string) {
   const [game, setGame] = useState<GameState | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(
     () => localStorage.getItem(STORAGE_KEY_PLAYER_ID)
   );
   const [playerName, setPlayerName] = useState<string>(
-    () => localStorage.getItem(STORAGE_KEY_PLAYER_NAME) || ''
+    () => autoJoinName || localStorage.getItem(STORAGE_KEY_PLAYER_NAME) || ''
   );
   const [joined, setJoined] = useState(false);
   const [lastGuessResult, setLastGuessResult] = useState<GuessResult | null>(null);
@@ -129,12 +129,12 @@ export function usePlayerGame(initialGameId?: string) {
 
   useEffect(() => {
     const targetGameId = initialGameId || localStorage.getItem(STORAGE_KEY_GAME_ID);
-    const storedName = localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
+    const storedName = autoJoinName || localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
 
     if (targetGameId && storedName) {
       joinGame(targetGameId, storedName);
     }
-  }, [initialGameId, joinGame]);
+  }, [initialGameId, autoJoinName, joinGame]);
 
   // Subscribe to real-time events
   useEffect(() => {
