@@ -120,9 +120,9 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${
+        className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-12 text-center cursor-pointer transition-all duration-300 ${
           isDragOver
-            ? 'border-gaming-purple bg-gaming-purple/10 scale-[1.02]'
+            ? 'border-gaming-purple bg-gaming-purple/10 scale-[1.01] sm:scale-[1.02]'
             : 'border-white/20 hover:border-gaming-purple/50 hover:bg-white/5'
         }`}
         onDrop={handleDrop}
@@ -139,14 +139,14 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
           onChange={handleFileChange}
         />
         <motion.div
-          animate={isDragOver ? { scale: 1.1, y: -5 } : { scale: 1, y: 0 }}
+          animate={isDragOver ? { scale: 1.05, y: -3 } : { scale: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 300 }}
         >
-          <Upload className="w-16 h-16 mx-auto mb-4 text-gaming-purple/70" />
-          <p className="text-lg font-semibold text-white/80">
+          <Upload className="w-10 h-10 sm:w-14 sm:h-14 mx-auto mb-3 text-gaming-purple/70" />
+          <p className="text-base sm:text-lg font-semibold text-white/80">
             Drag & drop photos here or click to browse
           </p>
-          <p className="text-sm text-white/40 mt-2">Accepts JPG, PNG, WEBP, SVG • Multiple files supported</p>
+          <p className="text-xs sm:text-sm text-white/40 mt-1.5">Accepts JPG, PNG, WEBP, SVG • Multiple files supported</p>
         </motion.div>
       </motion.div>
 
@@ -157,7 +157,7 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
           animate={{ opacity: 1, height: 'auto' }}
           className="flex justify-end"
         >
-          <button onClick={handleUploadAll} className="btn-primary flex items-center gap-2">
+          <button onClick={handleUploadAll} className="btn-primary flex items-center gap-2 text-sm px-4 py-2.5 sm:px-6 sm:py-3">
             <Upload className="w-4 h-4" />
             Upload All ({pendingCount})
           </button>
@@ -183,18 +183,18 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="absolute inset-0 bg-gaming-green/5 flex items-center justify-center z-10"
+                className="absolute inset-0 bg-gaming-green/5 flex items-center justify-center z-10 p-4"
               >
-                <div className="flex items-center gap-2 text-gaming-green font-semibold text-lg">
-                  <Check className="w-6 h-6" />
+                <div className="flex items-center gap-2 text-gaming-green font-semibold text-base sm:text-lg">
+                  <Check className="w-5 h-5 sm:w-6 sm:h-6" />
                   Uploaded Successfully
                 </div>
               </motion.div>
             )}
 
-            <div className={`flex gap-6 ${entry.uploaded ? 'opacity-30' : ''}`}>
+            <div className={`flex flex-col sm:flex-row gap-4 sm:gap-6 ${entry.uploaded ? 'opacity-30' : ''}`}>
               {/* Preview */}
-              <div className="flex-shrink-0 w-40 h-40 rounded-xl overflow-hidden bg-navy-900 border border-white/5">
+              <div className="w-full sm:w-40 h-44 sm:h-40 rounded-xl overflow-hidden bg-navy-900 border border-white/5 flex-shrink-0">
                 <img
                   src={entry.preview}
                   alt="Preview"
@@ -205,9 +205,9 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
               {/* Form */}
               <div className="flex-1 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-white/50">
-                    <Image className="w-4 h-4" />
-                    {entry.file.name}
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-white/50 truncate max-w-[200px] sm:max-w-xs">
+                    <Image className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{entry.file.name}</span>
                   </div>
                   <button
                     onClick={() => removeEntry(entry.id)}
@@ -223,7 +223,7 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
                   placeholder="Title / Correct Answer *"
                   value={entry.title}
                   onChange={(e) => updateEntry(entry.id, { title: e.target.value })}
-                  className="input-field text-sm"
+                  className="input-field text-sm py-2 sm:py-2.5"
                   disabled={entry.uploading || entry.uploaded}
                 />
 
@@ -233,12 +233,12 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
                   placeholder="Category (e.g., Movies, Animals)"
                   value={entry.category}
                   onChange={(e) => updateEntry(entry.id, { category: e.target.value })}
-                  className="input-field text-sm"
+                  className="input-field text-sm py-2 sm:py-2.5"
                   disabled={entry.uploading || entry.uploaded}
                 />
 
                 {/* Hints */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {entry.hints.map((hint, i) => (
                     <input
                       key={i}
@@ -246,7 +246,7 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
                       placeholder={`Hint ${i + 1}`}
                       value={hint}
                       onChange={(e) => updateHint(entry.id, i, e.target.value)}
-                      className="input-field text-sm"
+                      className="input-field text-xs sm:text-sm py-2 sm:py-2.5"
                       disabled={entry.uploading || entry.uploaded}
                     />
                   ))}
@@ -254,7 +254,7 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
 
                 {/* Error */}
                 {entry.error && (
-                  <p className="text-sm text-red-400">{entry.error}</p>
+                  <p className="text-xs sm:text-sm text-red-400">{entry.error}</p>
                 )}
 
                 {/* Upload Button */}
@@ -262,7 +262,7 @@ export default function PhotoUpload({ gameId, onUpload }: PhotoUploadProps) {
                   <button
                     onClick={() => handleUpload(entry)}
                     disabled={entry.uploading}
-                    className="btn-primary text-sm px-4 py-2 flex items-center gap-2"
+                    className="btn-primary text-xs sm:text-sm px-4 py-2 sm:py-2.5 flex items-center gap-2 w-full sm:w-auto justify-center"
                   >
                     {entry.uploading ? (
                       <>

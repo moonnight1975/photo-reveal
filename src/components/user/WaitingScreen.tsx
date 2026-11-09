@@ -126,7 +126,7 @@ export const WaitingScreen: React.FC<WaitingScreenProps> = ({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 min-h-[80px] flex items-center justify-center"
+          className="bg-white/[0.04] border border-white/[0.06] rounded-xl sm:rounded-2xl p-4 sm:p-5 min-h-[70px] sm:min-h-[80px] flex items-center justify-center"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -135,13 +135,13 @@ export const WaitingScreen: React.FC<WaitingScreenProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-2.5 sm:gap-3"
             >
               {React.createElement(tips[tipIndex].icon, {
-                size: 20,
+                size: 18,
                 className: 'text-purple-400 shrink-0',
               })}
-              <span className="text-white/60 text-sm text-left">
+              <span className="text-white/60 text-xs sm:text-sm text-left">
                 {tips[tipIndex].text}
               </span>
             </motion.div>

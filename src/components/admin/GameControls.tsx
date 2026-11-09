@@ -76,7 +76,7 @@ export default function GameControls({
   return (
     <div className="space-y-5">
       {/* Status Bar */}
-      <div className="card flex items-center justify-between">
+      <div className="card flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-6">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <motion.div
@@ -88,11 +88,11 @@ export default function GameControls({
           </div>
         </div>
 
-        <div className="flex items-center gap-6 text-sm text-white/60">
+        <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 text-xs sm:text-sm text-white/60">
           {/* Current Photo */}
           {photos.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <Camera className="w-4 h-4 text-gaming-purple" />
+              <Camera className="w-4 h-4 text-gaming-purple shrink-0" />
               <span>
                 Photo{' '}
                 <span className="text-white font-semibold">{game.currentPhotoIndex + 1}</span> of{' '}
@@ -104,7 +104,7 @@ export default function GameControls({
           {/* Timer */}
           {game.settings.timerEnabled && game.revealState && (
             <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-electric-400" />
+              <Clock className="w-4 h-4 text-electric-400 shrink-0" />
               <span className="font-mono text-white font-semibold">{timerRemaining}s</span>
             </div>
           )}
@@ -112,7 +112,7 @@ export default function GameControls({
           {/* Revealed Tiles */}
           {game.revealState && (
             <div className="flex items-center gap-1.5 text-white/40">
-              <Eye className="w-4 h-4" />
+              <Eye className="w-4 h-4 shrink-0" />
               <span>
                 {revealedCount}/{totalTiles} tiles
               </span>
@@ -121,7 +121,7 @@ export default function GameControls({
 
           {/* Score */}
           <div className="flex items-center gap-1.5">
-            <Trophy className="w-4 h-4 text-yellow-400" />
+            <Trophy className="w-4 h-4 text-yellow-400 shrink-0" />
             <span>
               <span className="text-white font-semibold">{scores.length}</span> players ·{' '}
               <span className="text-yellow-400">{totalScore}</span> pts
@@ -282,10 +282,10 @@ function ControlButton({
       whileTap={disabled ? {} : { scale: 0.95 }}
       onClick={onClick}
       disabled={disabled}
-      className={`${variantClasses[variant]} text-sm px-4 py-2.5 flex items-center gap-2`}
+      className={`${variantClasses[variant]} text-xs sm:text-sm px-3.5 py-2 sm:px-4 sm:py-2.5 flex items-center gap-1.5 sm:gap-2 justify-center`}
     >
       {icon}
-      {label}
+      <span>{label}</span>
     </motion.button>
   );
 }

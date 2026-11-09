@@ -35,7 +35,7 @@
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-gradient-to-r from-gaming-purple to-electric-600 
+    @apply px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-gaming-purple to-electric-600 
            rounded-xl font-semibold text-white shadow-lg 
            hover:shadow-gaming-purple/30 hover:scale-105 
            active:scale-95 transition-all duration-200
@@ -43,7 +43,7 @@
   }
 
   .btn-secondary {
-    @apply px-6 py-3 bg-navy-800/80 border border-white/10 
+    @apply px-4 sm:px-6 py-2.5 sm:py-3 bg-navy-800/80 border border-white/10 
            rounded-xl font-semibold text-white 
            hover:bg-navy-800 hover:border-gaming-purple/50 
            active:scale-95 transition-all duration-200
@@ -51,7 +51,7 @@
   }
 
   .btn-danger {
-    @apply px-6 py-3 bg-red-600/80 border border-red-500/30 
+    @apply px-4 sm:px-6 py-2.5 sm:py-3 bg-red-600/80 border border-red-500/30 
            rounded-xl font-semibold text-white 
            hover:bg-red-600 hover:shadow-red-500/20 hover:shadow-lg
            active:scale-95 transition-all duration-200
@@ -59,7 +59,7 @@
   }
 
   .btn-success {
-    @apply px-6 py-3 bg-gaming-green/80 border border-gaming-green/30 
+    @apply px-4 sm:px-6 py-2.5 sm:py-3 bg-gaming-green/80 border border-gaming-green/30 
            rounded-xl font-semibold text-white 
            hover:bg-gaming-green hover:shadow-gaming-green/20 hover:shadow-lg
            active:scale-95 transition-all duration-200
@@ -68,11 +68,11 @@
 
   .card {
     @apply bg-navy-800/60 backdrop-blur-sm border border-white/5 
-           rounded-2xl p-6 shadow-xl;
+           rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xl;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-navy-900/80 border border-white/10 
+    @apply w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-navy-900/80 border border-white/10 
            rounded-xl text-white placeholder-white/30 
            focus:outline-none focus:border-gaming-purple/50 focus:ring-2 focus:ring-gaming-purple/20
            transition-all duration-200;

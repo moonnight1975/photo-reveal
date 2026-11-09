@@ -75,44 +75,44 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-navy-950">
       {/* ─── Top Bar ──────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-navy-950/90 backdrop-blur-lg border-b border-white/5">
-        <div className="flex items-center justify-between px-6 py-4 max-w-[1800px] mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2.5">
-              <Camera className="w-6 h-6 text-gaming-purple" />
-              <h1 className="text-lg font-bold text-white tracking-tight">
-                Photo Reveal Game
-                <span className="text-gaming-purple ml-1.5">— Admin</span>
+      <header className="sticky top-0 z-50 bg-navy-950/95 backdrop-blur-lg border-b border-white/5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 max-w-[1800px] mx-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-gaming-purple shrink-0" />
+              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center">
+                <span>Photo Reveal</span>
+                <span className="text-gaming-purple ml-1.5 text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20">Admin</span>
               </h1>
             </div>
 
             {/* Game Selector */}
-            <div className="relative ml-4 flex items-center gap-2">
+            <div className="relative flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setShowSelector(!showSelector)}
-                className="btn-secondary text-sm px-4 py-2 flex items-center gap-2"
+                className="btn-secondary text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 max-w-[180px] sm:max-w-xs truncate"
               >
                 {game ? (
                   <>
-                    <Layers className="w-4 h-4 text-gaming-purple" />
-                    {game.name}
+                    <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gaming-purple shrink-0" />
+                    <span className="truncate">{game.name}</span>
                   </>
                 ) : (
                   <>
-                    <Settings className="w-4 h-4" />
-                    Select Game
+                    <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                    <span>Select Game</span>
                   </>
                 )}
-                <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+                <ChevronDown className="w-3.5 h-3.5 text-white/40 shrink-0" />
               </button>
 
               {game && (
                 <button
                   onClick={() => deselectGame()}
-                  className="text-xs text-white/50 hover:text-white flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+                  className="text-xs text-white/50 hover:text-white flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 whitespace-nowrap"
                   title="Back to all games overview"
                 >
-                  <span>← All Games</span>
+                  <span>← All</span>
                 </button>
               )}
 
@@ -122,7 +122,7 @@ export default function AdminPanel() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full mt-2 left-0 w-64 bg-navy-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                    className="absolute top-full mt-2 left-0 w-72 max-w-[90vw] bg-navy-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
                   >
                     {games.length === 0 ? (
                       <div className="p-4 text-sm text-white/40 text-center">No games yet</div>
@@ -147,14 +147,14 @@ export default function AdminPanel() {
                                 game?.id === g.id ? 'bg-gaming-purple/10' : ''
                               }`}
                             >
-                              <div>
-                                <div className="text-sm font-medium text-white">{g.name}</div>
+                              <div className="min-w-0 mr-2">
+                                <div className="text-sm font-medium text-white truncate">{g.name}</div>
                                 <div className="text-[10px] text-white/30 mt-0.5">
                                   {g.photos?.length ?? 0} photos
                                 </div>
                               </div>
                               <span
-                                className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${badge.cls}`}
+                                className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${badge.cls}`}
                               >
                                 {badge.label}
                               </span>
@@ -170,15 +170,15 @@ export default function AdminPanel() {
           </div>
 
           {/* New Game Button & Player View Link */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {game && (
               <a
                 href={`/play?gameId=${game.id}`}
                 target="_blank"
                 rel="noreferrer"
-                className="btn-secondary text-sm px-4 py-2 flex items-center gap-1.5 text-electric-400 hover:text-electric-300 border-electric-500/30 hover:border-electric-500/60"
+                className="btn-secondary text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 text-electric-400 hover:text-electric-300 border-electric-500/30 hover:border-electric-500/60"
               >
-                <span>Launch Player View ↗</span>
+                <span>Player View ↗</span>
               </a>
             )}
 
@@ -186,7 +186,7 @@ export default function AdminPanel() {
               <motion.div
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: 'auto' }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5 sm:gap-2 flex-wrap"
               >
                 <input
                   type="text"
@@ -194,23 +194,23 @@ export default function AdminPanel() {
                   value={newGameName}
                   onChange={(e) => setNewGameName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreateGame()}
-                  className="input-field text-sm w-48 py-2"
+                  className="input-field text-xs sm:text-sm w-36 sm:w-48 py-1.5 sm:py-2"
                   autoFocus
                 />
-                <button onClick={handleCreateGame} disabled={loading} className="btn-primary text-sm px-4 py-2">
+                <button onClick={handleCreateGame} disabled={loading} className="btn-primary text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2">
                   Create
                 </button>
                 <button
                   onClick={() => setShowNewGame(false)}
-                  className="text-white/40 hover:text-white/70 text-sm px-2"
+                  className="text-white/40 hover:text-white/70 text-xs sm:text-sm px-1.5 sm:px-2"
                 >
                   Cancel
                 </button>
               </motion.div>
             ) : (
-              <button onClick={() => setShowNewGame(true)} className="btn-primary text-sm px-4 py-2 flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                New Game
+              <button onClick={() => setShowNewGame(true)} className="btn-primary text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2">
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>New Game</span>
               </button>
             )}
           </div>
@@ -327,9 +327,9 @@ export default function AdminPanel() {
           </div>
         ) : (
           /* ─── Game Selected: Dashboard Layout ────────────── */
-          <div className="flex min-h-[calc(100vh-65px)]">
+          <div className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">
             {/* Left Sidebar: Settings */}
-            <aside className="w-80 flex-shrink-0 border-r border-white/5 p-5 overflow-y-auto">
+            <aside className="w-full lg:w-80 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-white/5 p-4 sm:p-5 overflow-y-auto">
               <RevealSettings
                 settings={game.settings || DEFAULT_SETTINGS}
                 onUpdate={(s) => updateSettings(game.id, s)}
@@ -338,13 +338,13 @@ export default function AdminPanel() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-6 overflow-y-auto space-y-6">
+            <main className="flex-1 p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6">
               {(!game.photos || game.photos.length === 0) ? (
                 /* No photos: prominent upload */
                 <div>
-                  <div className="mb-6">
-                    <h2 className="text-xl font-bold text-white mb-1">Add Photos to "{game.name}"</h2>
-                    <p className="text-sm text-white/40">Upload photos for players to guess</p>
+                  <div className="mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Add Photos to "{game.name}"</h2>
+                    <p className="text-xs sm:text-sm text-white/40">Upload photos for players to guess</p>
                   </div>
                   <PhotoUpload gameId={game.id} onUpload={uploadPhoto} />
                 </div>
@@ -352,14 +352,14 @@ export default function AdminPanel() {
                 /* Has photos: full dashboard */
                 <>
                   {/* Upload Toggle */}
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-white">{game.name}</h2>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <h2 className="text-lg sm:text-xl font-bold text-white truncate max-w-xs sm:max-w-md">{game.name}</h2>
                     <button
                       onClick={() => setShowUpload(!showUpload)}
-                      className="btn-secondary text-sm px-4 py-2 flex items-center gap-2"
+                      className="btn-secondary text-xs sm:text-sm px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2"
                     >
-                      <Upload className="w-4 h-4" />
-                      {showUpload ? 'Hide Upload' : 'Add Photos'}
+                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span>{showUpload ? 'Hide Upload' : 'Add Photos'}</span>
                     </button>
                   </div>
 

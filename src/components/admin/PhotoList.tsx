@@ -58,7 +58,7 @@ export default function PhotoList({ photos = [], gameId, onDelete, onReorder, cu
         </h3>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
         <AnimatePresence mode="popLayout">
           {photos.map((photo, index) => {
             const isActive = index === currentPhotoIndex;

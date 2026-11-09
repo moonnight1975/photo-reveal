@@ -104,32 +104,32 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
         variants={container}
         initial="hidden"
         animate="show"
-        className="relative z-10 w-full max-w-md mx-4"
+        className="relative z-10 w-full max-w-md mx-3 sm:mx-4"
       >
-        <div className="bg-white/[0.05] backdrop-blur-xl border border-white/[0.08] rounded-3xl p-8 sm:p-10 shadow-2xl">
+        <div className="bg-white/[0.05] backdrop-blur-xl border border-white/[0.08] rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-10 shadow-2xl">
           {/* Logo / Title */}
-          <motion.div variants={item} className="text-center mb-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-4 shadow-lg shadow-purple-500/25">
-              <Camera className="w-8 h-8 text-white" />
+          <motion.div variants={item} className="text-center mb-1 sm:mb-2">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 mb-3 sm:mb-4 shadow-lg shadow-purple-500/25">
+              <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
           </motion.div>
 
           <motion.h1
             variants={item}
-            className="text-3xl sm:text-4xl font-extrabold text-center bg-gradient-to-r from-purple-300 via-white to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_0_32px_rgba(168,85,247,0.35)]"
+            className="text-2xl sm:text-4xl font-extrabold text-center bg-gradient-to-r from-purple-300 via-white to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_0_32px_rgba(168,85,247,0.35)]"
           >
             Photo Reveal Game
           </motion.h1>
 
           <motion.p
             variants={item}
-            className="text-center text-sm text-white/50 mt-3 mb-8"
+            className="text-center text-xs sm:text-sm text-white/50 mt-2 sm:mt-3 mb-6 sm:mb-8"
           >
             Can you guess the image before it's fully revealed?
           </motion.p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
             <motion.div variants={item}>
               <label className="block text-xs font-medium text-white/60 mb-1.5 ml-1">
                 Your Name
@@ -140,7 +140,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your name"
                 autoFocus
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+                className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/30 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
               />
             </motion.div>
 
@@ -153,17 +153,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
                 value={gameId}
                 onChange={(e) => setGameId(e.target.value)}
                 placeholder="Enter game code"
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all font-mono text-sm"
+                className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all font-mono text-xs sm:text-sm"
               />
               {availableGames.length > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11px] text-white/40">Available Games:</span>
+                <div className="mt-2.5 flex flex-wrap items-center gap-1 sm:gap-1.5">
+                  <span className="text-[10px] sm:text-[11px] text-white/40">Available:</span>
                   {availableGames.map((g) => (
                     <button
                       key={g.id}
                       type="button"
                       onClick={() => setGameId(g.id)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
+                      className={`text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border transition-all truncate max-w-[140px] sm:max-w-none ${
                         gameId === g.id
                           ? 'bg-purple-600/40 border-purple-500 text-purple-200 font-semibold shadow-sm'
                           : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
@@ -180,7 +180,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-red-400 text-sm text-center"
+                className="text-red-400 text-xs sm:text-sm text-center"
               >
                 {error}
               </motion.p>
@@ -191,7 +191,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onJoin, defaultGam
                 type="submit"
                 whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(168,85,247,0.3)' }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-purple-600/20"
+                className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-sm sm:text-base rounded-xl transition-all shadow-lg shadow-purple-600/20"
               >
                 Join Game
               </motion.button>

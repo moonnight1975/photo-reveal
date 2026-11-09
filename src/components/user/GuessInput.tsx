@@ -45,9 +45,9 @@ export const GuessInput: React.FC<GuessInputProps> = ({
     disabled || isAnswerShown || (hasSucceeded && !multipleAttempts);
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 mt-6">
+    <div className="w-full max-w-2xl mx-auto px-2 sm:px-4 mt-4 sm:mt-6">
       <form onSubmit={handleSubmit} className="relative">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
           <div className="relative flex-1 w-full">
             <input
               type="text"
@@ -61,7 +61,7 @@ export const GuessInput: React.FC<GuessInputProps> = ({
                   ? 'Guesses locked for this photo'
                   : 'Type your guess here...'
               }
-              className={`w-full px-5 py-4 text-lg font-medium rounded-2xl bg-navy-900/90 text-white placeholder-gray-500 border-2 transition-all duration-300 shadow-xl focus:outline-none ${
+              className={`w-full px-4 py-3 sm:px-5 sm:py-4 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl bg-navy-900/90 text-white placeholder-gray-500 border-2 transition-all duration-300 shadow-xl focus:outline-none ${
                 lastResult?.isCorrect
                   ? 'border-emerald-500 shadow-emerald-500/20'
                   : lastResult && !lastResult.isCorrect
@@ -76,9 +76,9 @@ export const GuessInput: React.FC<GuessInputProps> = ({
           <button
             type="submit"
             disabled={isInputDisabled || !guess.trim()}
-            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-electric-500 hover:from-purple-500 hover:to-electric-400 text-white font-bold rounded-2xl shadow-lg shadow-purple-600/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 whitespace-nowrap"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-electric-500 hover:from-purple-500 hover:to-electric-400 text-white font-bold text-sm sm:text-base rounded-xl sm:rounded-2xl shadow-lg shadow-purple-600/30 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             <span>Submit Guess</span>
           </button>
         </div>
@@ -90,7 +90,7 @@ export const GuessInput: React.FC<GuessInputProps> = ({
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className={`mt-3 p-3.5 rounded-xl flex items-center gap-2.5 font-semibold text-sm border shadow-xl ${
+              className={`mt-2.5 sm:mt-3 p-3 sm:p-3.5 rounded-xl flex items-center gap-2 sm:gap-2.5 font-semibold text-xs sm:text-sm border shadow-xl ${
                 lastResult.isCorrect
                   ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50'
                   : 'bg-red-950/80 text-red-300 border-red-500/50'
@@ -98,14 +98,14 @@ export const GuessInput: React.FC<GuessInputProps> = ({
             >
               {lastResult.isCorrect ? (
                 <>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
                   <span>
                     🎉 Correct! You scored +{lastResult.score || 100} points!
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 shrink-0" />
                   <span>{lastResult.message || 'Incorrect guess. Try again!'}</span>
                 </>
               )}
