@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/
+uploads/*.jpg
+uploads/*.png
+uploads/*.webp
+.env
+.DS_Store

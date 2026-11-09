@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <radialGradient id="savanna" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#451a03" />
+      <stop offset="100%" stop-color="#1c1917" />
+    </radialGradient>
+    <linearGradient id="mane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b45309" />
+      <stop offset="50%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#savanna)"/>
+  <!-- Big Majestic Mane -->
+  <circle cx="400" cy="300" r="220" fill="url(#mane)"/>
+  <!-- Spiky Mane Texture -->
+  <polygon points="400,60 430,120 400,100 370,120" fill="#92400e"/>
+  <polygon points="580,180 540,220 560,200 520,240" fill="#78350f"/>
+  <polygon points="620,300 560,320 580,300 560,280" fill="#92400e"/>
+  <polygon points="220,180 260,220 240,200 280,240" fill="#78350f"/>
+  <polygon points="180,300 240,320 220,300 240,280" fill="#92400e"/>
+  <!-- Ears -->
+  <circle cx="280" cy="180" r="35" fill="#f59e0b"/>
+  <circle cx="280" cy="180" r="20" fill="#78350f"/>
+  <circle cx="520" cy="180" r="35" fill="#f59e0b"/>
+  <circle cx="520" cy="180" r="20" fill="#78350f"/>
+  <!-- Face -->
+  <ellipse cx="400" cy="330" rx="120" ry="140" fill="url(#face)"/>
+  <!-- Eyes -->
+  <ellipse cx="340" cy="290" rx="22" ry="14" fill="#fef08a"/>
+  <ellipse cx="460" cy="290" rx="22" ry="14" fill="#fef08a"/>
+  <circle cx="340" cy="290" r="10" fill="#0f172a"/>
+  <circle cx="460" cy="290" r="10" fill="#0f172a"/>
+  <!-- Snout -->
+  <polygon points="400,340 370,390 430,390" fill="#78350f"/>
+  <ellipse cx="400" cy="420" rx="45" ry="30" fill="#fef9c3"/>
+  <!-- Nose -->
+  <polygon points="380,380 420,380 400,405" fill="#1e293b"/>
+  <!-- Mouth line -->
+  <path d="M 400 405 L 400 425 Q 370 435 360 415 M 400 425 Q 430 435 440 415" fill="none" stroke="#1e293b" stroke-width="4"/>
+</svg>

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="50%" stop-color="#4c1d95" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="tower" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="680" cy="120" r="50" fill="#fef3c7" opacity="0.9"/>
+  <!-- Ground -->
+  <rect x="0" y="520" width="800" height="80" fill="#1e293b"/>
+  <!-- Trees -->
+  <ellipse cx="200" cy="530" rx="60" ry="30" fill="#064e3b" opacity="0.8"/>
+  <ellipse cx="600" cy="530" rx="80" ry="35" fill="#064e3b" opacity="0.8"/>
+  <!-- Eiffel Tower Silhouette -->
+  <!-- Legs -->
+  <path d="M 280 520 L 360 320 L 440 320 L 520 520 L 470 520 L 430 380 Q 400 360 370 380 L 330 520 Z" fill="url(#tower)"/>
+  <!-- Arch -->
+  <path d="M 340 520 Q 400 420 460 520 Z" fill="#1e1b4b" opacity="0.7"/>
+  <!-- Middle Tier -->
+  <rect x="350" y="300" width="100" height="20" rx="4" fill="url(#tower)"/>
+  <path d="M 360 300 L 385 180 L 415 180 L 440 300 Z" fill="url(#tower)"/>
+  <!-- Top Tier & Spire -->
+  <rect x="380" y="165" width="40" height="15" rx="3" fill="url(#tower)"/>
+  <polygon points="385,165 400,60 415,165" fill="url(#tower)"/>
+  <!-- Spire tip beam -->
+  <line x1="400" y1="60" x2="400" y2="30" stroke="#fef08a" stroke-width="4"/>
+  <circle cx="400" cy="30" r="8" fill="#fef08a" opacity="0.9"/>
+</svg>

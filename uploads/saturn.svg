@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <radialGradient id="space" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </radialGradient>
+    <linearGradient id="saturnBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="30%" stop-color="#f59e0b" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+    <linearGradient id="rings" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.2"/>
+      <stop offset="30%" stop-color="#f59e0b" stop-opacity="0.8"/>
+      <stop offset="70%" stop-color="#fbbf24" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#fde047" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#space)"/>
+  <!-- Stars -->
+  <circle cx="100" cy="80" r="2" fill="#fff" opacity="0.8"/>
+  <circle cx="250" cy="150" r="1.5" fill="#fff" opacity="0.6"/>
+  <circle cx="700" cy="120" r="2.5" fill="#fff" opacity="0.9"/>
+  <circle cx="650" cy="450" r="2" fill="#fff" opacity="0.7"/>
+  <circle cx="120" cy="480" r="1.5" fill="#fff" opacity="0.5"/>
+  <circle cx="400" cy="70" r="2" fill="#fff" opacity="0.8"/>
+  <!-- Back Rings -->
+  <g transform="rotate(-25 400 300)">
+    <ellipse cx="400" cy="300" rx="320" ry="70" fill="none" stroke="url(#rings)" stroke-width="36" opacity="0.75"/>
+    <ellipse cx="400" cy="300" rx="350" ry="78" fill="none" stroke="url(#rings)" stroke-width="12" opacity="0.45"/>
+  </g>
+  <!-- Planet Body -->
+  <circle cx="400" cy="300" r="140" fill="url(#saturnBody)"/>
+  <!-- Atmospheric bands -->
+  <clipPath id="planetClip">
+    <circle cx="400" cy="300" r="140"/>
+  </clipPath>
+  <g clip-path="url(#planetClip)">
+    <rect x="250" y="240" width="300" height="20" fill="#b45309" opacity="0.3"/>
+    <rect x="250" y="280" width="300" height="35" fill="#78350f" opacity="0.35"/>
+    <rect x="250" y="340" width="300" height="15" fill="#d97706" opacity="0.4"/>
+  </g>
+  <!-- Front Rings -->
+  <g transform="rotate(-25 400 300)">
+    <path d="M 80 300 A 320 70 0 0 0 720 300" fill="none" stroke="url(#rings)" stroke-width="36" opacity="0.9"/>
+    <path d="M 50 300 A 350 78 0 0 0 750 300" fill="none" stroke="url(#rings)" stroke-width="12" opacity="0.6"/>
+  </g>
+</svg>
