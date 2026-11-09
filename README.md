@@ -53,3 +53,4 @@ The database automatically seeds a demo championship with 4 challenges across **
 ## 🔒 Security & Fair Play
 - **Answer Masking**: The backend explicitly strips `photo.title` from all state payloads and socket broadcasts sent to `/play` players until the host triggers answer reveal or all tiles are uncovered. Answers cannot be inspected via client dev tools or network inspect.
 # photo-reveal
+# photo-reveal
